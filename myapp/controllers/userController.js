@@ -1,6 +1,7 @@
 'use strict';
 var mongoose = require('mongoose');
 require('./../models/user');
+var _ = require('lodash');
 
 class UserController {
     constructor(req, res, next) {
@@ -14,32 +15,51 @@ class UserController {
         var UserModel = mongoose.model('User');
 
         let userQuery = UserModel.find({}, (err) => {
-            if(err) console.log(err);
+            if(err) {
+                return this.res.status(404).json({error : "Resourse not found"})
+            }
           });
       
           userQuery.exec((err, response) => {
-            this.res.json(response);
+            if(err) {
+                return this.res.status(404).json({error : "Resourse not found"})
+            } else {
+                return this.res.status(200).json(response);
+            }
           });
     }
 
     getOne() {
         var UserModel = mongoose.model('User');
 
-        let userQuery = UserModel.findOne({_id:this.req.params['id']}, (err) => {
-            if(err) console.log(err);
+        let userQuery = UserModel.findOne({_id:this.req.params.id}, (err) => {
+            if(err) {
+                return this.res.status(404).json({error : "Resourse not found"})
+            }
           });
       
           userQuery.exec((err, response) => {
-            this.res.json(response);
+              if(err) {
+                return this.res.status(404).json({error : "Resourse not found"})
+              } else {
+                return this.res.status(200).json(response);
+              }
           });
     }
 
     create() {
         var UserModel = mongoose.model('User');
+        var params = this.req.body
 
-        UserModel.create(this.req.body, function(err, response){
+        UserModel.create(params, (err, response) => {
             if(err){
-                console.log('Error has Ocurred');
+                return this.res.status(400).json({error : "Resourse not found"})
+            } else {
+                if(!response) {
+                    return this.res.status(400).json({error : "Resourse not found"})
+                } else {
+                    return this.res.status(201).json(response);
+                }
             }
         });
     }
@@ -47,30 +67,41 @@ class UserController {
     updateOne() {
         var UserModel = mongoose.model('User');
 
-        UserModel.findOneAndUpdate(
+        let userQuery = UserModel.findOneAndUpdate(
             { _id:this.req.params.id },
-            { $set : { name:this.req.body.name,
-                       lastName:this.req.body.lastName, 
-                       nickName:this.req.body.nickName,
-                       password:this.req.body.password }},
-            { upsert : true },
-            function(err, response){
+            { $set : { username:this.req.body.username,}},
+            { new : true },
+            (err) => {
                 if(err){
-                    console.log('Error has Ocurred');
+                    return this.res.status(404).json({error : "Resourse not found"})
                 }
             });
+            userQuery.exec(_.bind((err, response) =>{
+                if(err){
+                    return this.res.status(404).json({error : "Resourse not found"});
+                } else {
+                    return this.res.status(200).json(response);
+                }
+            }, this));
     }
 
     deleteOne() {
         var UserModel = mongoose.model('User');
 
-        UserModel.findOneAndRemove(
+        let userQuery = UserModel.findOneAndRemove(
             { _id:this.req.params.id },
-            function(err, response){
+            (err) => {
                 if(err){
-                    console.log('Error has Ocurred');
+                    return this.res.status(404).json({error : "Resourse not found"})
                 }
             });
+        userQuery.exec(_.bind((err) =>{
+            if(err){
+                return this.res.status(404).json({error : "Resourse not found"});
+            } else {
+                return this.res.status(200).end();
+            }
+        }, this));
     }
 }
 
