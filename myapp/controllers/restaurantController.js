@@ -1,6 +1,7 @@
 'use strict';
 var mongoose = require('mongoose');
 require('./../models/restaurant');
+var _ = require('lodash');
 
 class RestaurantController {
     constructor(req, res, next) {
@@ -49,21 +50,30 @@ class RestaurantController {
     create() {
         var RestaurantModel = mongoose.model('Restaurant');
 
-        RestaurantModel.create(this.req.body, function(err, response){
+        RestaurantModel.create(this.req.body, _.bind((err, response) =>{
             if(err) {
-                console.log('Error has Ocurred');
+                return this.res.status(400).json({error : "Resource not found"});
+            } else {
+                if(!response) {
+                return this.res.status(400).json({error : "Resource not found"});
+                } else {
+                return this.res.status(201).json(response);
+                }
             }
-        });
+        }, this));
     }
 
     deleteOne() {
         var RestaurantModel = mongoose.model('Restaurant');
 
-        RestaurantModel.findOneAndRemove(
+        RestaurantModel.findOneAndUpdate(
             { _id:this.req.params.id },
-            function(err){
+            { $set : { active : false }},
+            (err) => {
                 if(err){
-                    console.log('Error has Ocurred');
+                    return this.res.status(400).json({error : "Resource not found"});
+                } else {
+                    return this.res.status(200).end();
                 }
             });
     }
@@ -71,15 +81,23 @@ class RestaurantController {
     updateOne(){
         var RestaurantModel = mongoose.model('Restaurant');
 
-        RestaurantModel.findOneAndUpdate(
+        let restaurantQuery = RestaurantModel.findOneAndUpdate(
             { _id:this.req.params.id },
-            { $set : { name:this.req.body.name , cuisine:this.req.body.cuisine } },
-            { upsert : true },
-            function(err, response){
+            { $set : { name:this.req.body.name } },
+            { new : true },
+            _.bind((err) => {
                 if(err){
-                    console.log('Error has Ocurrer');
+                    return this.res.status(404).json({error : "Resource not found"});
                 }
-            });
+            }, this));
+
+        restaurantQuery.exec(_.bind((err, response) => {
+            if(err || !response) {
+                return this.res.status(404).json({error : "Resource not found"});
+            } else {
+                return this.res.status(200).json(response);
+            }
+        }, this));
     }
 }
 
